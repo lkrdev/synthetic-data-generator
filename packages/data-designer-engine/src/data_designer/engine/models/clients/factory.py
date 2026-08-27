@@ -1,14 +1,17 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
 from data_designer.config.models import ModelConfig
+from data_designer.config.utils.constants import VERTEX_PROVIDER_TYPE
 from data_designer.engine.errors import DataDesignerError
 from data_designer.engine.model_provider import ModelProviderRegistry
 from data_designer.engine.models.clients.adapters.anthropic import AnthropicClient
 from data_designer.engine.models.clients.adapters.http_model_client import ClientConcurrencyMode
 from data_designer.engine.models.clients.adapters.openai_compatible import OpenAICompatibleClient
+from data_designer.engine.models.clients.adapters.vertex_ai import VertexAIClient
 from data_designer.engine.models.clients.base import ModelClient
 from data_designer.engine.models.clients.model_request_executor import ModelRequestExecutor
 from data_designer.engine.models.clients.retry import RetryConfig
@@ -17,7 +20,7 @@ from data_designer.engine.models.request_admission.controller import RequestAdmi
 from data_designer.engine.observability import RequestAdmissionEventSink
 from data_designer.engine.secret_resolver import SecretResolver
 
-_SUPPORTED_PROVIDER_TYPES = ("openai", "anthropic")
+_SUPPORTED_PROVIDER_TYPES = ("openai", "anthropic", VERTEX_PROVIDER_TYPE)
 _NO_TRANSPORT_RETRY_CONFIG = RetryConfig(max_retries=0, retryable_status_codes=frozenset())
 
 
@@ -90,6 +93,18 @@ def create_model_client(
             provider_name=provider.name,
             endpoint=provider.endpoint,
             api_key=api_key,
+            retry_config=adapter_retry_config,
+            max_parallel_requests=max_parallel,
+            timeout_s=timeout_s,
+            concurrency_mode=client_concurrency_mode,
+        )
+    elif provider.provider_type == VERTEX_PROVIDER_TYPE:
+        from data_designer.engine.models.clients.adapters.gcp_credentials import GcpTokenProvider
+
+        client = VertexAIClient(
+            provider_name=provider.name,
+            endpoint=provider.endpoint,
+            token_provider=GcpTokenProvider(),
             retry_config=adapter_retry_config,
             max_parallel_requests=max_parallel,
             timeout_s=timeout_s,

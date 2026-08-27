@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
+from pydantic import ValidationError as PydanticValidationError
 
 from data_designer.cli.forms.field import ValidationError
 from data_designer.cli.forms.provider_builder import ProviderFormBuilder
@@ -53,14 +55,16 @@ def test_name_field_accepts_any_name_when_no_existing() -> None:
 
 
 # Endpoint validation tests
-def test_endpoint_field_rejects_empty_string() -> None:
-    """Test endpoint field rejects empty strings."""
+def test_endpoint_field_accepts_empty_string() -> None:
+    """Endpoint is optional (derived from project/location for vertex)."""
     builder = ProviderFormBuilder()
     form = builder.create_form(initial_data={"endpoint": "test"})
     endpoint_field = form.get_field("endpoint")
 
-    with pytest.raises(ValidationError, match="Endpoint URL is required"):
-        endpoint_field.value = ""
+    endpoint_field.value = ""
+
+    # An empty endpoint is normalized to None and accepted (no ValidationError).
+    assert endpoint_field.value is None
 
 
 def test_endpoint_field_rejects_invalid_url() -> None:
@@ -107,6 +111,8 @@ def test_create_form_returns_manual_form_for_new_provider() -> None:
     assert form.get_field("endpoint") is not None
     assert form.get_field("provider_type") is not None
     assert form.get_field("api_key") is not None
+    assert form.get_field("project") is not None
+    assert form.get_field("location") is not None
 
 
 def test_create_form_returns_manual_form_for_updates() -> None:
@@ -231,3 +237,40 @@ def test_name_validation_case_sensitive() -> None:
     name_field.value = "openai"
 
     assert name_field.value == "openai"
+
+
+# Vertex AI provider tests
+def test_build_config_vertex_derives_endpoint() -> None:
+    """build_config for a vertex provider derives the endpoint from project/location."""
+    builder = ProviderFormBuilder()
+    form_data = {
+        "name": "vertex",
+        "endpoint": "",
+        "provider_type": "vertex",
+        "api_key": "",
+        "project": "my-project",
+        "location": "us-central1",
+    }
+
+    provider = builder.build_config(form_data)
+
+    assert provider.provider_type == "vertex"
+    assert provider.project == "my-project"
+    assert provider.location == "us-central1"
+    assert provider.api_key is None
+    assert provider.endpoint == (
+        "https://us-central1-aiplatform.googleapis.com/v1/projects/my-project/locations/us-central1/endpoints/openapi"
+    )
+
+
+def test_build_config_non_vertex_requires_endpoint() -> None:
+    """build_config for a non-vertex provider without an endpoint raises."""
+    builder = ProviderFormBuilder()
+    form_data = {
+        "name": "openai",
+        "endpoint": "",
+        "provider_type": "openai",
+    }
+
+    with pytest.raises(PydanticValidationError, match="requires an `endpoint`"):
+        builder.build_config(form_data)

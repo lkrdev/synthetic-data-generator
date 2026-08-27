@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 """
@@ -41,6 +42,8 @@ _LAZY_IMPORTS = {
     "PIL": "PIL",
     "Image": "PIL.Image",
     "tiktoken": "tiktoken",
+    "google_auth": "google.auth",
+    "google_auth_requests": "google.auth.transport.requests",
 }
 
 

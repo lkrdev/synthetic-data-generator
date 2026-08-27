@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -298,6 +299,23 @@ OPENAI_API_KEY_ENV_VAR_NAME = "OPENAI_API_KEY"
 OPENROUTER_PROVIDER_NAME = "openrouter"
 
 OPENROUTER_API_KEY_ENV_VAR_NAME = "OPENROUTER_API_KEY"
+
+# Vertex AI (Google Cloud) provider. Auth uses Application Default Credentials
+# (ADC) via the standard google-auth library, so no API key is required.
+VERTEX_PROVIDER_TYPE = "vertex"
+
+# Default Vertex AI location used when a provider omits one.
+VERTEX_DEFAULT_LOCATION = "us-central1"
+
+# OAuth scope required to call the Vertex AI API with ADC credentials.
+VERTEX_AUTH_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+
+# Environment variables consulted as a fallback for the Vertex AI provider's
+# `project` and `location` when they are not set explicitly on the provider.
+# The names follow the Google Cloud / Vertex AI SDK conventions so the same
+# exports work across gcloud, the google-genai SDK, and Data Designer.
+VERTEX_PROJECT_ENV_VAR_NAME = "GOOGLE_CLOUD_PROJECT"
+VERTEX_LOCATION_ENV_VAR_NAME = "GOOGLE_CLOUD_LOCATION"
 
 ATTRIBUTION_TITLE = "NeMo Data Designer"
 ATTRIBUTION_REFERER = "https://github.com/NVIDIA-NeMo/DataDesigner"

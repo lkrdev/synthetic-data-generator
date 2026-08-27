@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -83,6 +84,12 @@ app = typer.Typer(
                 "attr": "check_models_command",
                 "help": "Check that every referenced model and MCP tool is reachable",
                 "rich_help_panel": "Generation",
+            },
+            "mcp-server": {
+                "module": "data_designer.mcp.server",
+                "attr": "run_mcp_server",
+                "help": "Run the Data Designer Model Context Protocol (MCP) server",
+                "rich_help_panel": "Agent",
             },
         }
     ),

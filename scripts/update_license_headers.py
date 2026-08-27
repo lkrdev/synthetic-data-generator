@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
@@ -315,8 +316,20 @@ def get_copyright_year_string(file_path: Path, current_year: int, existing_heade
     return f"{creation_year}-{current_year}"
 
 
-def generate_license_header(copyright_year: str) -> str:
-    """Generate the license header with the given copyright year."""
+def generate_license_header(copyright_year: str, existing_header: str = "") -> str:
+    """Generate the license header with the given copyright year, preserving lkr.dev attribution."""
+    if "lkr.dev" in existing_header and "NVIDIA" not in existing_header:
+        return (
+            f"# SPDX-FileCopyrightText: Copyright (c) {copyright_year} lkr.dev. All rights reserved.\n"
+            "# SPDX-License-Identifier: Apache-2.0\n\n"
+        )
+    if "lkr.dev" in existing_header and "NVIDIA" in existing_header:
+        return (
+            f"# SPDX-FileCopyrightText: Copyright (c) {copyright_year} "
+            "NVIDIA CORPORATION & AFFILIATES. All rights reserved.\n"
+            "# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.\n"
+            "# SPDX-License-Identifier: Apache-2.0\n\n"
+        )
     return (
         f"# SPDX-FileCopyrightText: Copyright (c) {copyright_year} "
         "NVIDIA CORPORATION & AFFILIATES. All rights reserved.\n"
@@ -348,7 +361,7 @@ def main(path: Path, check_only: bool = False) -> tuple[int, int, int, list[Path
                 existing_header = ""
 
             copyright_year = get_copyright_year_string(file_path, current_year, existing_header)
-            license_header = generate_license_header(copyright_year)
+            license_header = generate_license_header(copyright_year, existing_header)
 
             if check_only:
                 matches, _ = check_license_header_matches(file_path, license_header)

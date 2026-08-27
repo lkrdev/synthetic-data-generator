@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -31,9 +32,9 @@ class ProviderFormBuilder(FormBuilder[ModelProvider]):
             ),
             TextField(
                 "endpoint",
-                "API endpoint URL",
+                "API endpoint URL (leave blank for vertex to derive from project/location)",
                 default=initial_data.get("endpoint") if initial_data else None,
-                required=True,
+                required=False,
                 validator=self._validate_endpoint,
             ),
             TextField(
@@ -44,8 +45,20 @@ class ProviderFormBuilder(FormBuilder[ModelProvider]):
             ),
             TextField(
                 "api_key",
-                "API key or environment variable name",
+                "API key or environment variable name (not needed for vertex)",
                 default=initial_data.get("api_key") if initial_data else None,
+                required=False,
+            ),
+            TextField(
+                "project",
+                "Google Cloud project ID (vertex only)",
+                default=initial_data.get("project") if initial_data else None,
+                required=False,
+            ),
+            TextField(
+                "location",
+                "Vertex AI location, e.g. us-central1 or global (vertex only)",
+                default=initial_data.get("location") if initial_data else None,
                 required=False,
             ),
         ]
@@ -61,9 +74,13 @@ class ProviderFormBuilder(FormBuilder[ModelProvider]):
         return True, None
 
     def _validate_endpoint(self, endpoint: str) -> tuple[bool, str | None]:
-        """Validate endpoint URL."""
+        """Validate endpoint URL.
+
+        The endpoint is optional (it is derived from project/location for the
+        vertex provider type), but when provided it must be a valid HTTP(S) URL.
+        """
         if not endpoint:
-            return False, "Endpoint URL is required"
+            return True, None
         if not is_http_url(endpoint):
             return False, "Invalid URL format (must start with http:// or https://)"
         return True, None
@@ -72,7 +89,9 @@ class ProviderFormBuilder(FormBuilder[ModelProvider]):
         """Build ModelProvider from form data."""
         return ModelProvider(
             name=form_data["name"],
-            endpoint=form_data["endpoint"],
+            endpoint=form_data.get("endpoint") or None,
             provider_type=form_data["provider_type"],
-            api_key=form_data.get("api_key"),
+            api_key=form_data.get("api_key") or None,
+            project=form_data.get("project") or None,
+            location=form_data.get("location") or None,
         )

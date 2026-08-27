@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from data_designer.config.utils.constants import (
     MODEL_PROVIDERS_FILE_PATH,
     PREDEFINED_PROVIDERS,
     PREDEFINED_PROVIDERS_MODEL_MAP,
+    VERTEX_PROVIDER_TYPE,
 )
 from data_designer.config.utils.io_helpers import load_config_file, save_config_file
 
@@ -75,6 +77,8 @@ def get_providers_with_missing_api_keys(providers: list[ModelProvider]) -> list[
     providers_with_missing_keys = []
 
     for provider in providers:
+        if provider.provider_type == VERTEX_PROVIDER_TYPE:
+            continue
         if provider.api_key is None:
             # No API key specified at all
             providers_with_missing_keys.append(provider)

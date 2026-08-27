@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -249,3 +250,13 @@ def test_get_providers_with_missing_api_keys_mixed_case():
         # provider2 has uppercase key but env var not set -> MISSING
         assert len(missing) == 1
         assert missing[0].name == "provider2"
+
+
+def test_get_providers_with_missing_api_keys_vertex_provider():
+    """Test that vertex providers using ADC are not treated as missing API keys."""
+    providers = [
+        ModelProvider(name="vertex", provider_type="vertex", project="my-project"),
+    ]
+
+    missing = get_providers_with_missing_api_keys(providers)
+    assert len(missing) == 0

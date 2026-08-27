@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 lkr.dev. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
 import logging
+import os
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
@@ -20,6 +22,10 @@ from data_designer.config.utils.constants import (
     MAX_TOP_P,
     MIN_TEMPERATURE,
     MIN_TOP_P,
+    VERTEX_DEFAULT_LOCATION,
+    VERTEX_LOCATION_ENV_VAR_NAME,
+    VERTEX_PROJECT_ENV_VAR_NAME,
+    VERTEX_PROVIDER_TYPE,
 )
 from data_designer.config.utils.io_helpers import smart_load_yaml
 from data_designer.config.utils.media_helpers import (
@@ -678,22 +684,51 @@ class ModelConfig(ConfigBase):
         return value
 
 
+def build_vertex_openai_endpoint(project: str, location: str) -> str:
+    """Build the Vertex AI OpenAI-compatible base URL for a project/location.
+
+    The OpenAI-compatible chat completions route (``/chat/completions``) is
+    appended by the client adapter, so this returns only the base URL.
+
+    Args:
+        project: Google Cloud project ID.
+        location: Vertex AI location, e.g. "us-central1" or "global".
+
+    Returns:
+        The OpenAI-compatible base URL for the Vertex AI endpoint.
+    """
+    host = "aiplatform.googleapis.com" if location == "global" else f"{location}-aiplatform.googleapis.com"
+    return f"https://{host}/v1/projects/{project}/locations/{location}/endpoints/openapi"
+
+
 class ModelProvider(ConfigBase):
     """Configuration for a custom model provider.
 
     Attributes:
         name: Name of the model provider.
-        endpoint: API endpoint URL for the provider.
+        endpoint: API endpoint URL for the provider. Optional for the ``vertex``
+            provider type, where it is derived from ``project`` and ``location``.
         provider_type: Provider type (default: "openai"). Determines the API format to use.
-        api_key: Optional API key for authentication.
+        api_key: Optional API key for authentication. Not required for the ``vertex``
+            provider type, which authenticates via Google Cloud Application Default
+            Credentials (ADC).
+        project: Google Cloud project ID. Required for the ``vertex`` provider type.
+            Falls back to the ``GOOGLE_CLOUD_PROJECT`` environment variable when not
+            set explicitly.
+        location: Vertex AI location, e.g. "us-central1" or "global". Used by the
+            ``vertex`` provider type to build the endpoint URL. Resolution order is
+            explicit value, then the ``GOOGLE_CLOUD_LOCATION`` environment variable,
+            then a default of "us-central1".
         extra_body: Additional parameters to pass in API requests.
         extra_headers: Additional headers to pass in API requests.
     """
 
     name: str
-    endpoint: str
+    endpoint: str | None = None
     provider_type: str = "openai"
     api_key: str | None = None
+    project: str | None = None
+    location: str | None = None
     extra_body: dict[str, Any] | None = None
     extra_headers: dict[str, str] | None = None
 
@@ -701,6 +736,29 @@ class ModelProvider(ConfigBase):
     @classmethod
     def normalize_provider_type(cls, v: str) -> str:
         return v.lower()
+
+    @model_validator(mode="after")
+    def _resolve_endpoint(self) -> Self:
+        """Validate provider fields and derive the endpoint for Vertex AI.
+
+        For the ``vertex`` provider type, ``project`` is required and the endpoint
+        is derived from ``project`` and ``location`` when not explicitly provided.
+        All other provider types require an explicit ``endpoint``.
+        """
+        if self.provider_type == VERTEX_PROVIDER_TYPE:
+            # Resolution order: explicit config > environment variable > default.
+            self.project = self.project or os.getenv(VERTEX_PROJECT_ENV_VAR_NAME)
+            if not self.project:
+                raise ValueError(
+                    f"provider_type {VERTEX_PROVIDER_TYPE!r} requires a `project` (your Google Cloud "
+                    f"project ID). Set it explicitly or export {VERTEX_PROJECT_ENV_VAR_NAME}."
+                )
+            self.location = self.location or os.getenv(VERTEX_LOCATION_ENV_VAR_NAME) or VERTEX_DEFAULT_LOCATION
+            if not self.endpoint:
+                self.endpoint = build_vertex_openai_endpoint(self.project, self.location)
+        elif not self.endpoint:
+            raise ValueError(f"provider {self.name!r} requires an `endpoint`.")
+        return self
 
 
 def load_model_configs(model_configs: list[ModelConfig] | str | Path) -> list[ModelConfig]:
