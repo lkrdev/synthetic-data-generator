@@ -15,7 +15,7 @@ Use this skill when you need to build, sample, test, or generate synthetic datas
 
 DataDesigner is available as an MCP server running directly via `uvx`:
 ```bash
-uvx --from git+https://github.com/LukaFontanilla/synthetic-data-generator.git data-designer-mcp
+uvx --from git+https://github.com/lkrdev/synthetic-data-generator.git@main data-designer-mcp
 ```
 Or locally via CLI:
 ```bash
