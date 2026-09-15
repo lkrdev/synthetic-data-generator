@@ -40,7 +40,13 @@ from typing import Any
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
-from mcp.client.streamable_http import streamablehttp_client
+try:
+    from mcp.client.streamable_http import streamable_http_client as streamablehttp_client
+except ImportError:
+    try:
+        from mcp.client.streamable_http import streamablehttp_client
+    except ImportError:
+        streamablehttp_client = None  # type: ignore
 
 from data_designer.config.mcp import LocalStdioMCPProvider, MCPProvider, MCPProviderT
 from data_designer.config.utils.media_helpers import (

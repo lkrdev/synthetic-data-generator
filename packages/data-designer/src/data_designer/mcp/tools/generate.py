@@ -19,6 +19,7 @@ def generate_dataset(
     dataset_name: str = "dataset",
     artifact_path: str = "./artifacts",
     output_format: Literal["parquet", "jsonl", "csv"] = "parquet",
+    seed: int = 42,
 ) -> dict[str, Any]:
     """Execute full-scale synthetic dataset generation and save output files to disk.
 
